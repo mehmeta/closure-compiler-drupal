@@ -1,0 +1,61 @@
+<?php
+// $Id$
+
+function closure_compiler_cron() {
+  closure_compiler_compile();
+}
+function closure_compiler_compile() {
+  $js_path = file_create_path('js');
+  $js_files = scandir($js_path);
+  foreach ($js_files as $key => $filename) {
+    if (substr($filename, 0, 3) != 'js_') {
+      unset ($js_files[$key]);
+    }
+  }
+  if (empty ($js_files)) {
+    drupal_set_message('No aggregated javascript files found at ' . check_plain($js_path) . '.');
+    return;
+  }
+  // Get ready to send js files to closure compiler service
+  $ch = curl_init();
+  $options = array (
+    CURLOPT_URL => "http://closure-compiler.appspot.com/compile",
+    CURLOPT_POST => 1,
+    CURLOPT_RETURNTRANSFER => true,
+
+  );
+  curl_setopt_array($ch, $options);
+  $success = $failed = 0;
+  foreach ($js_files as $filename) {
+    $filepath = $js_path . '/' . $filename;
+    if (!($js = file_get_contents($filepath))) {
+      continue;
+    }
+    $params = array (
+      'js_code' => urlencode($js),
+      'compilation_level' => 'SIMPLE_OPTIMIZATIONS',
+      'output_info' => 'compiled_code',
+      'output_format' => 'text',
+
+    );
+    $paramString = '';
+    foreach ($params as $key => $param) {
+      $paramString .= $key . '=' . $param . '&';
+    }
+    curl_setopt($ch, CURLOPT_POSTFIELDS, $paramString);
+    $js_output = curl_exec($ch);
+    if ($js_output) {
+      // Write it back to the file
+      if (file_put_contents($filepath, $js_output)) {
+        $success++;
+      } else {
+        $failed++;
+      }
+    }
+  }
+  watchdog('closure_compiler', t('Successfully compiled @success javascript files, @fail failed.', array (
+    '@success' => $success,
+    '@fail' => $failed
+  )));
+  curl_close($ch);
+}
