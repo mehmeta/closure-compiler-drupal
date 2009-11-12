@@ -18,14 +18,15 @@ function closure_compiler_menu() {
 		),
 		'type' => MENU_NORMAL_ITEM,
 		'file' => 'closure_compiler.admin.inc',
+
 		
 	);
 	return $items;
 }
-function closure_compiler_cron() { 
+function closure_compiler_cron() {
 	if (variable_get('closure_compiler_service', FALSE) && variable_get('preprocess_js', 0)) {
-		closure_compiler_compile();	
-	}	
+		closure_compiler_compile();
+	}
 }
 function closure_compiler_compile() {
 	$js_path = file_create_path('js');
@@ -42,6 +43,13 @@ function closure_compiler_compile() {
 	}
 	// Get ready to send js files to closure compiler service
 	$success = $failed = 0;
+	$compilation_levels = array (
+		'WHITESPACE_ONLY',
+		'SIMPLE_OPTIMIZATIONS',
+		'ADVANCED_OPTIMIZATIONS'
+	);
+	$is_path_method = variable_get('closure_compiler_process_method', 0);
+	global $base_url;
 	foreach ($js_files as $filename) {
 		$filepath = $js_path . '/' . $filename;
 		// If the file has already been optimized, do not send it to the service
@@ -49,18 +57,49 @@ function closure_compiler_compile() {
 			continue;
 		}
 		$params = array (
-			'js_code' => $js,
-			'compilation_level' => 'SIMPLE_OPTIMIZATIONS',
+			'compilation_level' => $compilation_levels[variable_get('closure_compiler_compilation_level', 1)],
 			'output_info' => 'compiled_code',
-			'output_format' => 'text'			
+			'output_format' => 'json'
 		);
+		// If the data is over 200000 bytes, API will return an error saying POST data is too large, 
+		// code_url is the only method possible at that point.
+		if ((strlen($js) > 200000)|| $is_path_method) {
+			// Path method
+			$params['code_url'] = $base_url . '/'. $filepath;
+		} else {
+			// Content method
+			$params['js_code'] = $js;
+		}
 		$headers = array (
 			'Content-Type' => 'application/x-www-form-urlencoded'
 		);
 		$response = drupal_http_request(CLOSURE_COMPILER_SERVICE_URL, $headers, 'POST', http_build_query($params, '', '&'));
-		if ($response->code == 200 && $response->data) {
+		if ($response->code != 200 || !$response->data) {
+			watchdog('closure_compiler', t('Request error: @request', array (
+				'@request' => print_r($response, TRUE)
+			)));
+			$failed++;
+			continue;
+		}
+		// Decode json in the response
+		if (!($compiled_code = json_decode($response->data, TRUE)) || !is_array($compiled_code)) {
+			watchdog('closure_compiler', t('Failed to parse JSON response: @response', array (
+				'@response' => $response->data
+			)));
+			$failed++;
+			continue;
+		}
+		if (array_key_exists('serverErrors', $compiled_code)) {
+			watchdog('closure_compiler', t('Server error: @error', array (
+				'@error' => print_r($compiled_code['serverErrors'], TRUE),
+				
+			)));
+			$failed++;
+			continue;
+		}
+		if (array_key_exists('compiledCode', $compiled_code) && !empty($compiled_code['compiledCode'])) {
 			// Success, write it back to the file
-			$contents = CLOSURE_COMPILER_SIGNATURE . $response->data;
+			$contents = CLOSURE_COMPILER_SIGNATURE . $compiled_code['compiledCode'];
 			if (file_put_contents($filepath, $contents)) {
 				$success++;
 			} else {
@@ -70,7 +109,7 @@ function closure_compiler_compile() {
 			$failed++;
 		}
 		// Terminate the process if we hit the limit
-		if ($process_limit && ($success+$failed) == $process_limit) {
+		if ($process_limit && ($success + $failed) == $process_limit) {
 			break;
 		}
 	}
