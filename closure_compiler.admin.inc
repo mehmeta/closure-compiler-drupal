@@ -43,7 +43,7 @@ function closure_compiler_settings() {
 			t('Send JavaScript file contents to the API'),
 			t('Send JavaScript file paths to the API (Requires your site to be public)'),
 		),
-		'#description' => t("First setting reads the cached JavaScript files under !filesyspath and sends the javascript code directly to the service to be compiled. Second setting sends the URI of the JavaScript file for its contents to be retrieved and compiled by the service. Your site's URLs must be public (not an internal development domain etc.) for this method to work. IMPORTANT NOTE: If your JavaScript payload size is bigger than 200000 bytes, the modules uses the second method regardless of this setting as it is the only mode possible in that case (API limitation).",array('!filesyspath' => file_directory_path())),		
+		'#description' => t("First setting reads the cached JavaScript files under !filesyspath and sends the code directly to the service to be compiled. Second setting sends the URI of the JavaScript file for its contents to be retrieved and compiled by the service. Your site's URLs must be public (not an internal development domain etc.) for this method to work. IMPORTANT NOTE: If your JavaScript payload size is bigger than 200000 bytes, the module uses the second method regardless of this setting as it is the only mode possible in that case (API limitation).",array('!filesyspath' => file_directory_path())),		
 	);
 	// Warn the user if js aggregation is not enabled
 	if (!variable_get('preprocess_js', 0)) {
@@ -52,5 +52,15 @@ function closure_compiler_settings() {
 			'!link' => l('performance settings', 'admin/settings/performance')
 		)), 'error');
 	}
+	// Warn the user if other js aggregation modules are enabled
+	$js_modules = array('javascript_aggregator');
+	foreach ($js_modules as $module) {
+		if (module_exists($module)) {
+			drupal_set_message(t('Warning: Javascript module @module is enabled. This might cause problems with the Closure Compiler module.', array (
+			'@module' => $module
+		)), 'warning');
+		}
+	}	
+	
 	return system_settings_form($form);
 }

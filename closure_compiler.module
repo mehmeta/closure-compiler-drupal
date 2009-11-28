@@ -33,7 +33,7 @@ function closure_compiler_compile() {
 	$js_files = scandir($js_path);
 	$process_limit = variable_get('closure_compiler_process_limit', 0);
 	foreach ($js_files as $key => $filename) {
-		if (substr($filename, 0, 3) != 'js_') {
+		if (substr($filename, -3, 3) != '.js') {
 			unset ($js_files[$key]);
 		}
 	}
