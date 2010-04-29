@@ -1,4 +1,4 @@
 ; $Id$ 
 name = Google Closure Compiler
-description = Taps into the Javascript aggregation process and uses Google's Closure Compiler service.
+description = Taps into the core JavaScript aggregation process and utilizes Google's Closure Compiler Script/Service.
 core = 6.x
