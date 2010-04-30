@@ -13,3 +13,4 @@ CHANGELOG
 * Added Google Closure Compiler Application support (java based local compiling) 
 * Performance improvements: For checking whether a file has been processed before, only reading the sufficient number of bytes as opposed to
 whole file
+* Moved the settings under performance tab

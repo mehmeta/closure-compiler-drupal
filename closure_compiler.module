@@ -223,10 +223,12 @@ function closure_compiler_compile() {
 			$failed++;
 		}
 	}
-	watchdog('closure_compiler', t('Successfully compiled @success javascript files, @fail failed.', array (
-		'@success' => $success,
-		'@fail' => $failed
-	)));
+	if (($success + $failed) > 0) {
+		watchdog('closure_compiler', t('Successfully compiled @success javascript files, @fail failed.', array (
+			'@success' => $success,
+			'@fail' => $failed
+		)));	
+	}	
 }
 /**
  * This function tests first hand that local closure compiler function is able to work as intended.
@@ -320,7 +322,7 @@ function closure_compiler_local_status_content() {
 		$compiler_working = closure_compiler_local_works();
 		$compiler_working_status = array(
 		'value' => $compiler_working ? 'Verified that Closure Compiler works locally.'
-		: 'Unable to run Closure Compiler locally. Please check PHP permissions.',
+		: 'Unable to run Closure Compiler locally. Please check Java version, PHP permissions.',
 		'title' => 'Local Compiler Test'
 		);
 		if (!$compiler_working) {
