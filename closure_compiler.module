@@ -8,7 +8,12 @@ define("CLOSURE_COMPILER_TEST_STRING", 'var i = 4; alert(i+i);');
 define("CLOSURE_COMPILER_TEST_FILE", 'test_js_file.js');
 define("CLOSURE_COMPILER_TEMP_FILE", 'temp_js_file.js');
 
-
+/**
+ * hook_form_alter implementation, used to display the module settings under the standard performance settings.
+ * @param $form
+ * @param $form_state
+ * @param $form_id
+ */
 function closure_compiler_form_alter(&$form, &$form_state, $form_id) {
 	if ($form_id != 'system_performance_settings') {
 		return;
@@ -109,6 +114,9 @@ function closure_compiler_confirm_local($display_message = FALSE) {
 		variable_set('closure_compiler_process_method', 1);
 	}
 }
+/**
+ * hook_cron implementation.
+ */
 function closure_compiler_cron() {
 	if (variable_get('closure_compiler_service', FALSE) && variable_get('preprocess_js', 0)) {
 		// Perform local compiling check before each compilation cycle
@@ -116,6 +124,9 @@ function closure_compiler_cron() {
 		closure_compiler_compile();
 	}
 }
+/**
+ * Main compilation function 
+ */
 function closure_compiler_compile() {
 	$js_path = file_create_path('js');
 	$temp_file_path = $js_path . '/' . CLOSURE_COMPILER_TEMP_FILE;
