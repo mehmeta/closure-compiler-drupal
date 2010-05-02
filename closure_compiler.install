@@ -1,7 +1,0 @@
-<?php
-/**
- * Implement the install hook to set the preferred method to compile locally if all tests are passed
- */
-function closure_compiler_install() {
-	variable_set('closure_compiler_process_method', closure_compiler_local_available() ? 0 : 1);
-}
