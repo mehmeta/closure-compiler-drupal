@@ -1,5 +1,4 @@
 <?php
-// $Id$
 
 define("CLOSURE_COMPILER_SERVICE_URL", "http://closure-compiler.appspot.com/compile");
 define("CLOSURE_COMPILER_SIGNATURE", "/* Optimized by closure_compiler module using Google closure compiler. */");
